@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>班费记账本</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎓 班费记账本</h1>
+            <div class="balance-card">
+                <span class="balance-label">当前余额</span>
+                <span class="balance-amount" id="balance">¥0.00</span>
+            </div>
+        </header>
+
+        <!-- 添加交易表单 -->
+        <div class="form-section">
+            <div class="tab-buttons">
+                <button class="tab-btn active" data-tab="income">💰 交班费</button>
+                <button class="tab-btn" data-tab="expense">💸 支出</button>
+            </div>
+
+            <!-- 收入表单 -->
+            <form id="income-form" class="transaction-form active">
+                <div class="form-group">
+                    <label>姓名</label>
+                    <input type="text" id="income-name" placeholder="谁交了班费" required>
+                </div>
+                <div class="form-group">
+                    <label>金额 (¥)</label>
+                    <input type="number" id="income-amount" placeholder="0.00" step="0.01" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label>备注</label>
+                    <input type="text" id="income-note" placeholder="可选备注">
+                </div>
+                <div class="form-group">
+                    <label>截图（可选）</label>
+                    <div class="file-upload" id="income-upload">
+                        <input type="file" id="income-image" accept="image/*">
+                        <div class="upload-placeholder">
+                            <span class="upload-icon">📷</span>
+                            <span>点击上传截图</span>
+                        </div>
+                        <div class="preview-container" id="income-preview" style="display:none;">
+                            <img id="income-preview-img" src="" alt="预览">
+                            <button type="button" class="remove-btn" onclick="removeImage('income')">✕</button>
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" class="btn-submit">记录收入</button>
+            </form>
+
+            <!-- 支出表单 -->
+            <form id="expense-form" class="transaction-form">
+                <div class="form-group">
+                    <label>支出项目</label>
+                    <input type="text" id="expense-title" placeholder="买了什么" required>
+                </div>
+                <div class="form-group">
+                    <label>金额 (¥)</label>
+                    <input type="number" id="expense-amount" placeholder="0.00" step="0.01" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label>日期</label>
+                    <input type="date" id="expense-date" required>
+                </div>
+                <div class="form-group">
+                    <label>备注</label>
+                    <input type="text" id="expense-note" placeholder="可选备注">
+                </div>
+                <div class="form-group">
+                    <label>票据图片（可选）</label>
+                    <div class="file-upload" id="expense-upload">
+                        <input type="file" id="expense-image" accept="image/*">
+                        <div class="upload-placeholder">
+                            <span class="upload-icon">🧾</span>
+                            <span>点击上传票据</span>
+                        </div>
+                        <div class="preview-container" id="expense-preview" style="display:none;">
+                            <img id="expense-preview-img" src="" alt="预览">
+                            <button type="button" class="remove-btn" onclick="removeImage('expense')">✕</button>
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" class="btn-submit btn-expense">记录支出</button>
+            </form>
+        </div>
+
+        <!-- 筛选器 -->
+        <div class="filter-section">
+            <button class="filter-btn active" data-filter="all">全部</button>
+            <button class="filter-btn" data-filter="income">收入</button>
+            <button class="filter-btn" data-filter="expense">支出</button>
+        </div>
+
+        <!-- 交易记录列表 -->
+        <div class="records-section">
+            <h2>📋 收支记录</h2>
+            <div id="records-list" class="records-list">
+                <!-- 记录会动态插入这里 -->
+            </div>
+            <div id="empty-state" class="empty-state">
+                <p>暂无记录</p>
+                <p class="empty-hint">开始记录你的第一笔收支吧！</p>
+            </div>
+        </div>
+
+        <!-- 页脚 -->
+        <footer>
+            <p>班费记账本 · 方便透明</p>
+        </footer>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        // Firebase imports
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+        import { getStorage, ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js';
+
+        // Firebase configuration - 请替换为您自己的配置
+        const firebaseConfig = {
+            apiKey: "AIzaSyBVXuj2NmGJ3IEjORkp6TTgTaa2Faosq8I",
+            authDomain: "i-ching-discipleship-cohort-vi.firebaseapp.com",
+            projectId: "i-ching-discipleship-cohort-vi",
+            storageBucket: "i-ching-discipleship-cohort-vi.firebasestorage.app",
+            messagingSenderId: "490436360759",
+            appId: "1:490436360759:web:07ea436bd3b1e4e6539db2",
+            measurementId: "G-97QRK153R7"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+
+        // Make Firebase instances available globally
+        window.firebaseApp = app;
+        window.db = db;
+        window.storage = storage;
+        window.firebaseReady = true;
+
+        // Load records on page load
+        loadRecords();
+
+        // 加载记录
+        async function loadRecords() {
+            const recordsList = document.getElementById('records-list');
+            const emptyState = document.getElementById('empty-state');
+
+            try {
+                const q = query(collection(db, 'transactions'), orderBy('timestamp', 'desc'));
+                const querySnapshot = await getDocs(q);
+
+                recordsList.innerHTML = '';
+
+                if (querySnapshot.empty) {
+                    emptyState.style.display = 'block';
+                    return;
+                }
+
+                emptyState.style.display = 'none';
+                let totalIncome = 0;
+                let totalExpense = 0;
+
+                querySnapshot.forEach((doc) => {
+                    const record = doc.data();
+                    const recordId = doc.id;
+
+                    if (record.type === 'income') {
+                        totalIncome += parseFloat(record.amount);
+                    } else {
+                        totalExpense += parseFloat(record.amount);
+                    }
+
+                    const card = createRecordCard(record, recordId);
+                    recordsList.appendChild(card);
+                });
+
+                const balance = totalIncome - totalExpense;
+                document.getElementById('balance').textContent = `¥${balance.toFixed(2)}`;
+                document.getElementById('balance').className = `balance-amount ${balance >= 0 ? 'positive' : 'negative'}`;
+
+            } catch (error) {
+                console.error('加载记录失败:', error);
+                // Fallback to localStorage if Firebase not configured
+                loadFromLocalStorage();
+            }
+        }
+
+        function loadFromLocalStorage() {
+            const recordsList = document.getElementById('records-list');
+            const emptyState = document.getElementById('empty-state');
+            const records = JSON.parse(localStorage.getItem('classFinanceRecords') || '[]');
+
+            recordsList.innerHTML = '';
+            let totalIncome = 0;
+            let totalExpense = 0;
+
+            if (records.length === 0) {
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+
+            records.forEach((record, index) => {
+                if (record.type === 'income') {
+                    totalIncome += parseFloat(record.amount);
+                } else {
+                    totalExpense += parseFloat(record.amount);
+                }
+
+                const card = createRecordCard(record, index.toString());
+                recordsList.appendChild(card);
+            });
+
+            const balance = totalIncome - totalExpense;
+            document.getElementById('balance').textContent = `¥${balance.toFixed(2)}`;
+            document.getElementById('balance').className = `balance-amount ${balance >= 0 ? 'positive' : 'negative'}`;
+        }
+
+        // 创建记录卡片
+        function createRecordCard(record, id) {
+            const card = document.createElement('div');
+            card.className = `record-card ${record.type}`;
+            card.dataset.type = record.type;
+
+            const date = record.date ? new Date(record.date).toLocaleDateString('zh-CN') : '无日期';
+            const icon = record.type === 'income' ? '💰' : '💸';
+            const amountPrefix = record.type === 'income' ? '+' : '-';
+
+            card.innerHTML = `
+                <div class="record-icon">${icon}</div>
+                <div class="record-info">
+                    <div class="record-title">${escapeHtml(record.name || record.title)}</div>
+                    <div class="record-meta">
+                        <span class="record-date">${date}</span>
+                        ${record.note ? `<span class="record-note">${escapeHtml(record.note)}</span>` : ''}
+                    </div>
+                </div>
+                <div class="record-amount ${record.type}">
+                    ${amountPrefix}¥${parseFloat(record.amount).toFixed(2)}
+                </div>
+                ${record.imageUrl ? `
+                    <div class="record-image" onclick="showImageModal('${record.imageUrl}')">
+                        <img src="${record.imageUrl}" alt="附件图片">
+                    </div>
+                ` : ''}
+            `;
+
+            return card;
+        }
+
+        // HTML转义
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Tab切换
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.transaction-form').forEach(f => f.classList.remove('active'));
+                btn.classList.add('active');
+                const targetForm = btn.dataset.tab === 'income' ? 'income-form' : 'expense-form';
+                document.getElementById(targetForm).classList.add('active');
+            });
+        });
+
+        // 筛选
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const filter = btn.dataset.filter;
+                document.querySelectorAll('.record-card').forEach(card => {
+                    if (filter === 'all' || card.dataset.type === filter) {
+                        card.style.display = 'flex';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            });
+        });
+
+        // 图片上传预览
+        ['income', 'expense'].forEach(type => {
+            const input = document.getElementById(`${type}-image`);
+            const upload = document.getElementById(`${type}-upload`);
+            const preview = document.getElementById(`${type}-preview`);
+            const previewImg = document.getElementById(`${type}-preview-img`);
+            const placeholder = upload.querySelector('.upload-placeholder');
+
+            input.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        previewImg.src = e.target.result;
+                        preview.style.display = 'block';
+                        placeholder.style.display = 'none';
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        });
+
+        // 移除图片
+        window.removeImage = function(type) {
+            document.getElementById(`${type}-image`).value = '';
+            document.getElementById(`${type}-preview`).style.display = 'none';
+            document.querySelector(`#${type}-upload .upload-placeholder`).style.display = 'flex';
+        };
+
+        // 提交收入
+        document.getElementById('income-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const name = document.getElementById('income-name').value;
+            const amount = document.getElementById('income-amount').value;
+            const note = document.getElementById('income-note').value;
+            const imageFile = document.getElementById('income-image').files[0];
+
+            await saveTransaction({
+                type: 'income',
+                name: name,
+                amount: amount,
+                note: note,
+                date: new Date().toISOString().split('T')[0],
+                imageFile: imageFile
+            });
+
+            e.target.reset();
+            removeImage('income');
+        });
+
+        // 提交支出
+        document.getElementById('expense-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const title = document.getElementById('expense-title').value;
+            const amount = document.getElementById('expense-amount').value;
+            const date = document.getElementById('expense-date').value;
+            const note = document.getElementById('expense-note').value;
+            const imageFile = document.getElementById('expense-image').files[0];
+
+            await saveTransaction({
+                type: 'expense',
+                name: title,
+                amount: amount,
+                date: date,
+                note: note,
+                imageFile: imageFile
+            });
+
+            e.target.reset();
+            removeImage('expense');
+        });
+
+        // 保存交易记录
+        async function saveTransaction(data) {
+            try {
+                let imageUrl = null;
+
+                // 如果有图片，先上传图片
+                if (data.imageFile) {
+                    const storageRef = ref(storage, `images/${Date.now()}_${data.imageFile.name}`);
+                    const snapshot = await uploadBytes(storageRef, data.imageFile);
+                    imageUrl = await getDownloadURL(snapshot.ref);
+                }
+
+                // 保存到Firestore
+                const docData = {
+                    type: data.type,
+                    name: data.name,
+                    amount: parseFloat(data.amount),
+                    date: data.date,
+                    note: data.note || '',
+                    imageUrl: imageUrl,
+                    timestamp: serverTimestamp()
+                };
+
+                await addDoc(collection(db, 'transactions'), docData);
+
+                // 重新加载记录
+                await loadRecords();
+
+                // 切换到全部显示
+                document.querySelector('.filter-btn[data-filter="all"]').click();
+
+            } catch (error) {
+                console.error('保存失败:', error);
+                // Fallback to localStorage
+                saveToLocalStorage(data);
+            }
+        }
+
+        function saveToLocalStorage(data) {
+            const records = JSON.parse(localStorage.getItem('classFinanceRecords') || '[]');
+            records.unshift({
+                type: data.type,
+                name: data.name,
+                amount: parseFloat(data.amount),
+                date: data.date,
+                note: data.note || '',
+                imageUrl: null,
+                timestamp: Date.now()
+            });
+            localStorage.setItem('classFinanceRecords', JSON.stringify(records));
+            loadFromLocalStorage();
+        }
+
+        // 图片放大查看
+        window.showImageModal = function(url) {
+            const modal = document.createElement('div');
+            modal.className = 'image-modal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <button class="modal-close" onclick="this.parentElement.parentElement.remove()">✕</button>
+                    <img src="${url}" alt="大图">
+                </div>
+            `;
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.remove();
+            });
+            document.body.appendChild(modal);
+        };
+
+        // 设置默认日期为今天
+        document.getElementById('expense-date').valueAsDate = new Date();
+    </script>
+</body>
+</html>
