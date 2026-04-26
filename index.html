@@ -4,23 +4,506 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>班费记账本</title>
-    <link rel="stylesheet" href="style.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        header h1 {
+            color: white;
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .share-section {
+            background: rgba(255,255,255,0.2);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 15px;
+        }
+
+        .share-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: white;
+            color: #667eea;
+            padding: 10px 20px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .share-btn:hover {
+            background: #f0f0f0;
+        }
+
+        .balance-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+        }
+
+        .balance-label {
+            display: block;
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+
+        .balance-amount {
+            font-size: 2.5rem;
+            font-weight: bold;
+        }
+
+        .balance-amount.positive {
+            color: #10b981;
+        }
+
+        .balance-amount.negative {
+            color: #ef4444;
+        }
+
+        /* Form Section */
+        .form-section {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+        }
+
+        .tab-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            background: #f3f4f6;
+            border-radius: 10px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .transaction-form {
+            display: none;
+        }
+
+        .transaction-form.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #333;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        /* File Upload */
+        .file-upload {
+            position: relative;
+            border: 2px dashed #d1d5db;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .file-upload:hover {
+            border-color: #667eea;
+            background: #f9fafb;
+        }
+
+        .file-upload input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .upload-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            color: #6b7280;
+        }
+
+        .upload-icon {
+            font-size: 2rem;
+        }
+
+        .preview-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        .preview-container img {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 8px;
+        }
+
+        .remove-btn {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            width: 24px;
+            height: 24px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Submit Button */
+        .btn-submit {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-expense {
+            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+        }
+
+        .btn-expense:hover {
+            box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4);
+        }
+
+        /* Filter */
+        .filter-section {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .filter-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .filter-btn.active {
+            background: white;
+            color: #667eea;
+        }
+
+        /* Records */
+        .records-section {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+        }
+
+        .records-section h2 {
+            color: #333;
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+        }
+
+        .records-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .record-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 15px;
+            background: #f9fafb;
+            border-radius: 12px;
+            transition: transform 0.2s;
+            flex-wrap: wrap;
+        }
+
+        .record-card:hover {
+            transform: translateX(5px);
+        }
+
+        .record-icon {
+            font-size: 1.8rem;
+            width: 45px;
+            height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            border-radius: 10px;
+        }
+
+        .record-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .record-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 3px;
+            word-break: break-word;
+        }
+
+        .record-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            font-size: 0.8rem;
+            color: #6b7280;
+        }
+
+        .record-note {
+            background: #e5e7eb;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .record-amount {
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+
+        .record-amount.income {
+            color: #10b981;
+        }
+
+        .record-amount.expense {
+            color: #ef4444;
+        }
+
+        .record-image {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .record-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6b7280;
+        }
+
+        .empty-state p {
+            margin-bottom: 5px;
+        }
+
+        .empty-hint {
+            font-size: 0.9rem;
+        }
+
+        /* Image Modal */
+        .image-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            position: relative;
+            max-width: 90%;
+            max-height: 90%;
+        }
+
+        .modal-content img {
+            max-width: 100%;
+            max-height: 90vh;
+            border-radius: 8px;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: -40px;
+            right: 0;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            margin-top: 20px;
+            color: rgba(255,255,255,0.7);
+            font-size: 0.85rem;
+        }
+
+        /* QR Modal */
+        .qr-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .qr-modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            text-align: center;
+            max-width: 320px;
+        }
+
+        .qr-modal h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .qr-modal img {
+            width: 200px;
+            height: 200px;
+        }
+
+        .qr-modal p {
+            margin-top: 15px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .qr-close {
+            margin-top: 15px;
+            padding: 10px 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 480px) {
+            body {
+                padding: 15px;
+            }
+
+            header h1 {
+                font-size: 1.5rem;
+            }
+
+            .balance-amount {
+                font-size: 2rem;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>🎓 班费记账本</h1>
+            <h1>班费记账本</h1>
+            <div class="share-section">
+                <a href="#" class="share-btn" onclick="showQRCode(); return false;">
+                    <span>分享给同学</span>
+                    <span style="font-size: 1.2rem;">📱</span>
+                </a>
+            </div>
             <div class="balance-card">
                 <span class="balance-label">当前余额</span>
-                <span class="balance-amount" id="balance">¥0.00</span>
+                <span class="balance-amount positive" id="balance">¥0.00</span>
             </div>
         </header>
 
         <!-- 添加交易表单 -->
         <div class="form-section">
             <div class="tab-buttons">
-                <button class="tab-btn active" data-tab="income">💰 交班费</button>
-                <button class="tab-btn" data-tab="expense">💸 支出</button>
+                <button class="tab-btn active" data-tab="income">交班费</button>
+                <button class="tab-btn" data-tab="expense">支出</button>
             </div>
 
             <!-- 收入表单 -->
@@ -101,7 +584,6 @@
         <div class="records-section">
             <h2>📋 收支记录</h2>
             <div id="records-list" class="records-list">
-                <!-- 记录会动态插入这里 -->
             </div>
             <div id="empty-state" class="empty-state">
                 <p>暂无记录</p>
@@ -109,97 +591,23 @@
             </div>
         </div>
 
-        <!-- 页脚 -->
         <footer>
             <p>班费记账本 · 方便透明</p>
         </footer>
     </div>
 
-    <!-- Firebase SDK -->
-    <script type="module">
-        // Firebase imports
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
-        import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
-        import { getStorage, ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js';
+    <script>
+        const STORAGE_KEY = 'classFinanceRecords';
 
-        // Firebase configuration - 请替换为您自己的配置
-        const firebaseConfig = {
-            apiKey: "AIzaSyBVXuj2NmGJ3IEjORkp6TTgTaa2Faosq8I",
-            authDomain: "i-ching-discipleship-cohort-vi.firebaseapp.com",
-            projectId: "i-ching-discipleship-cohort-vi",
-            storageBucket: "i-ching-discipleship-cohort-vi.firebasestorage.app",
-            messagingSenderId: "490436360759",
-            appId: "1:490436360759:web:07ea436bd3b1e4e6539db2",
-            measurementId: "G-97QRK153R7"
-        };
+        // 页面加载时读取数据
+        document.addEventListener('DOMContentLoaded', loadRecords);
 
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const storage = getStorage(app);
-
-        // Make Firebase instances available globally
-        window.firebaseApp = app;
-        window.db = db;
-        window.storage = storage;
-        window.firebaseReady = true;
-
-        // Load records on page load
-        loadRecords();
-
-        // 加载记录
-        async function loadRecords() {
+        function loadRecords() {
+            const records = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
             const recordsList = document.getElementById('records-list');
             const emptyState = document.getElementById('empty-state');
-
-            try {
-                const q = query(collection(db, 'transactions'), orderBy('timestamp', 'desc'));
-                const querySnapshot = await getDocs(q);
-
-                recordsList.innerHTML = '';
-
-                if (querySnapshot.empty) {
-                    emptyState.style.display = 'block';
-                    return;
-                }
-
-                emptyState.style.display = 'none';
-                let totalIncome = 0;
-                let totalExpense = 0;
-
-                querySnapshot.forEach((doc) => {
-                    const record = doc.data();
-                    const recordId = doc.id;
-
-                    if (record.type === 'income') {
-                        totalIncome += parseFloat(record.amount);
-                    } else {
-                        totalExpense += parseFloat(record.amount);
-                    }
-
-                    const card = createRecordCard(record, recordId);
-                    recordsList.appendChild(card);
-                });
-
-                const balance = totalIncome - totalExpense;
-                document.getElementById('balance').textContent = `¥${balance.toFixed(2)}`;
-                document.getElementById('balance').className = `balance-amount ${balance >= 0 ? 'positive' : 'negative'}`;
-
-            } catch (error) {
-                console.error('加载记录失败:', error);
-                // Fallback to localStorage if Firebase not configured
-                loadFromLocalStorage();
-            }
-        }
-
-        function loadFromLocalStorage() {
-            const recordsList = document.getElementById('records-list');
-            const emptyState = document.getElementById('empty-state');
-            const records = JSON.parse(localStorage.getItem('classFinanceRecords') || '[]');
 
             recordsList.innerHTML = '';
-            let totalIncome = 0;
-            let totalExpense = 0;
 
             if (records.length === 0) {
                 emptyState.style.display = 'block';
@@ -207,6 +615,8 @@
             }
 
             emptyState.style.display = 'none';
+            let totalIncome = 0;
+            let totalExpense = 0;
 
             records.forEach((record, index) => {
                 if (record.type === 'income') {
@@ -215,7 +625,7 @@
                     totalExpense += parseFloat(record.amount);
                 }
 
-                const card = createRecordCard(record, index.toString());
+                const card = createRecordCard(record, index);
                 recordsList.appendChild(card);
             });
 
@@ -224,8 +634,7 @@
             document.getElementById('balance').className = `balance-amount ${balance >= 0 ? 'positive' : 'negative'}`;
         }
 
-        // 创建记录卡片
-        function createRecordCard(record, id) {
+        function createRecordCard(record, index) {
             const card = document.createElement('div');
             card.className = `record-card ${record.type}`;
             card.dataset.type = record.type;
@@ -237,7 +646,7 @@
             card.innerHTML = `
                 <div class="record-icon">${icon}</div>
                 <div class="record-info">
-                    <div class="record-title">${escapeHtml(record.name || record.title)}</div>
+                    <div class="record-title">${escapeHtml(record.name)}</div>
                     <div class="record-meta">
                         <span class="record-date">${date}</span>
                         ${record.note ? `<span class="record-note">${escapeHtml(record.note)}</span>` : ''}
@@ -256,7 +665,6 @@
             return card;
         }
 
-        // HTML转义
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
@@ -312,15 +720,14 @@
             });
         });
 
-        // 移除图片
-        window.removeImage = function(type) {
+        function removeImage(type) {
             document.getElementById(`${type}-image`).value = '';
             document.getElementById(`${type}-preview`).style.display = 'none';
             document.querySelector(`#${type}-upload .upload-placeholder`).style.display = 'flex';
-        };
+        }
 
         // 提交收入
-        document.getElementById('income-form').addEventListener('submit', async (e) => {
+        document.getElementById('income-form').addEventListener('submit', (e) => {
             e.preventDefault();
 
             const name = document.getElementById('income-name').value;
@@ -328,21 +735,23 @@
             const note = document.getElementById('income-note').value;
             const imageFile = document.getElementById('income-image').files[0];
 
-            await saveTransaction({
-                type: 'income',
-                name: name,
-                amount: amount,
-                note: note,
-                date: new Date().toISOString().split('T')[0],
-                imageFile: imageFile
-            });
+            handleImageFile(imageFile).then(imageUrl => {
+                saveTransaction({
+                    type: 'income',
+                    name: name,
+                    amount: amount,
+                    note: note,
+                    date: new Date().toISOString().split('T')[0],
+                    imageUrl: imageUrl
+                });
 
-            e.target.reset();
-            removeImage('income');
+                e.target.reset();
+                removeImage('income');
+            });
         });
 
         // 提交支出
-        document.getElementById('expense-form').addEventListener('submit', async (e) => {
+        document.getElementById('expense-form').addEventListener('submit', (e) => {
             e.preventDefault();
 
             const title = document.getElementById('expense-title').value;
@@ -351,74 +760,44 @@
             const note = document.getElementById('expense-note').value;
             const imageFile = document.getElementById('expense-image').files[0];
 
-            await saveTransaction({
-                type: 'expense',
-                name: title,
-                amount: amount,
-                date: date,
-                note: note,
-                imageFile: imageFile
-            });
+            handleImageFile(imageFile).then(imageUrl => {
+                saveTransaction({
+                    type: 'expense',
+                    name: title,
+                    amount: amount,
+                    date: date,
+                    note: note,
+                    imageUrl: imageUrl
+                });
 
-            e.target.reset();
-            removeImage('expense');
+                e.target.reset();
+                removeImage('expense');
+            });
         });
 
-        // 保存交易记录
-        async function saveTransaction(data) {
-            try {
-                let imageUrl = null;
+        async function handleImageFile(file) {
+            if (!file) return null;
 
-                // 如果有图片，先上传图片
-                if (data.imageFile) {
-                    const storageRef = ref(storage, `images/${Date.now()}_${data.imageFile.name}`);
-                    const snapshot = await uploadBytes(storageRef, data.imageFile);
-                    imageUrl = await getDownloadURL(snapshot.ref);
-                }
-
-                // 保存到Firestore
-                const docData = {
-                    type: data.type,
-                    name: data.name,
-                    amount: parseFloat(data.amount),
-                    date: data.date,
-                    note: data.note || '',
-                    imageUrl: imageUrl,
-                    timestamp: serverTimestamp()
-                };
-
-                await addDoc(collection(db, 'transactions'), docData);
-
-                // 重新加载记录
-                await loadRecords();
-
-                // 切换到全部显示
-                document.querySelector('.filter-btn[data-filter="all"]').click();
-
-            } catch (error) {
-                console.error('保存失败:', error);
-                // Fallback to localStorage
-                saveToLocalStorage(data);
-            }
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.readAsDataURL(file);
+            });
         }
 
-        function saveToLocalStorage(data) {
-            const records = JSON.parse(localStorage.getItem('classFinanceRecords') || '[]');
+        function saveTransaction(data) {
+            const records = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
             records.unshift({
-                type: data.type,
-                name: data.name,
-                amount: parseFloat(data.amount),
-                date: data.date,
-                note: data.note || '',
-                imageUrl: null,
+                ...data,
                 timestamp: Date.now()
             });
-            localStorage.setItem('classFinanceRecords', JSON.stringify(records));
-            loadFromLocalStorage();
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+            loadRecords();
+            document.querySelector('.filter-btn[data-filter="all"]').click();
         }
 
         // 图片放大查看
-        window.showImageModal = function(url) {
+        function showImageModal(url) {
             const modal = document.createElement('div');
             modal.className = 'image-modal';
             modal.innerHTML = `
@@ -431,7 +810,28 @@
                 if (e.target === modal) modal.remove();
             });
             document.body.appendChild(modal);
-        };
+        }
+
+        // 显示二维码
+        function showQRCode() {
+            const pageUrl = window.location.href;
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(pageUrl)}`;
+
+            const modal = document.createElement('div');
+            modal.className = 'qr-modal';
+            modal.innerHTML = `
+                <div class="qr-modal-content">
+                    <h3>分享给同学</h3>
+                    <img src="${qrUrl}" alt="二维码">
+                    <p>扫码查看班费收支记录</p>
+                    <button class="qr-close" onclick="this.parentElement.parentElement.remove()">关闭</button>
+                </div>
+            `;
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.remove();
+            });
+            document.body.appendChild(modal);
+        }
 
         // 设置默认日期为今天
         document.getElementById('expense-date').valueAsDate = new Date();
